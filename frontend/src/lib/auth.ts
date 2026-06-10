@@ -2,7 +2,7 @@ const SESSION_KEY = "sumarh.session";
 const ALLOWED_EMAIL = "sumarh@gmail.com";
 const ALLOWED_PASSWORD = "sumarh123";
 const ADMIN_EMAIL = "admin@gmail.com";
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "admin123@";
 const USERS_KEY = "sumarh.users";
 
 export interface RegisteredUser {
