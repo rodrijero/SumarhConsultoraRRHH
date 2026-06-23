@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { FileUp, CheckCircle2, Clock, Lock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { FileUp, CheckCircle2, Clock, Lock, Bell } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { isAuthenticated } from "@/lib/auth";
 import { getCurrentSession } from "@/lib/auth";
@@ -17,6 +17,81 @@ function CargarCV() {
   const [authModal, setAuthModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const CATEGORIES = [
+    "Administrativo",
+    "Operario / Producción",
+    "Técnico",
+    "Limpieza y Mantenimiento",
+    "Atención al Cliente",
+    "Logística",
+  ];
+  const LOCATIONS = [
+    "Todas",
+    "San Carlos Centro",
+    "Rosario",
+    "Rafaela",
+    "San Jorge",
+    "San Vicente",
+    "Gálvez",
+    "Remoto",
+  ];
+  const MODALITIES = ["Todos", "Presencial", "Remoto", "Híbrido"];
+
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [location, setLocation] = useState("Todas");
+  const [modality, setModality] = useState("Todos");
+  const [prefsSaved, setPrefsSaved] = useState(false);
+
+  const prefsKey = () => {
+    const email = getCurrentSession()?.email;
+    return email ? `sumarh.notifPrefs.${email}` : null;
+  };
+
+  useEffect(() => {
+    const key = prefsKey();
+    if (!key) return;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const p = JSON.parse(raw);
+        setNotifEnabled(!!p.enabled);
+        setCategories(p.categories ?? []);
+        setLocation(p.location ?? "Todas");
+        setModality(p.modality ?? "Todos");
+      }
+    } catch {}
+  }, []);
+
+  const toggleNotif = () => {
+    if (!isAuthenticated()) {
+      setAuthModal(true);
+      return;
+    }
+    setNotifEnabled((v) => !v);
+    setPrefsSaved(false);
+  };
+
+  const toggleCategory = (c: string) => {
+    setCategories((prev) =>
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
+    );
+    setPrefsSaved(false);
+  };
+
+  const savePrefs = () => {
+    const key = prefsKey();
+    if (!key) {
+      setAuthModal(true);
+      return;
+    }
+    localStorage.setItem(
+      key,
+      JSON.stringify({ enabled: notifEnabled, categories, location, modality }),
+    );
+    setPrefsSaved(true);
+  };
 
   const handleSend = () => {
     if (!isAuthenticated()) {
@@ -105,6 +180,104 @@ function CargarCV() {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-10 rounded-xl border border-[#1a5f5f]/15 bg-[#1a5f5f]/5 p-8">
+          <div className="flex items-center gap-3">
+            <Bell className="h-5 w-5 text-[#1a5f5f]" />
+            <h2 className="text-xl font-bold text-[#1a5f5f]">Notificaciones de empleos</h2>
+          </div>
+
+          <label className="mt-5 flex cursor-pointer items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={notifEnabled}
+              onClick={toggleNotif}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                notifEnabled ? "bg-[#1a5f5f]" : "bg-foreground/25"
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                  notifEnabled ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+            <span className="text-sm font-medium text-foreground">
+              Quiero recibir notificaciones de nuevos empleos por email
+            </span>
+          </label>
+
+          {notifEnabled && (
+            <div className="mt-6 space-y-6">
+              <div>
+                <p className="mb-3 text-sm font-semibold text-foreground">Categoría de empleo</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {CATEGORIES.map((c) => (
+                    <label key={c} className="flex cursor-pointer items-center gap-2 text-sm text-foreground/80">
+                      <input
+                        type="checkbox"
+                        checked={categories.includes(c)}
+                        onChange={() => toggleCategory(c)}
+                        className="h-4 w-4 accent-[#1a5f5f]"
+                      />
+                      {c}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">Ubicación preferida</p>
+                  <select
+                    value={location}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      setPrefsSaved(false);
+                    }}
+                    className="w-full rounded-md border border-foreground/20 bg-white px-3 py-2 text-sm"
+                  >
+                    {LOCATIONS.map((l) => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">Modalidad</p>
+                  <select
+                    value={modality}
+                    onChange={(e) => {
+                      setModality(e.target.value);
+                      setPrefsSaved(false);
+                    }}
+                    className="w-full rounded-md border border-foreground/20 bg-white px-3 py-2 text-sm"
+                  >
+                    {MODALITIES.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-col items-start gap-3">
+            <button
+              type="button"
+              onClick={savePrefs}
+              className="rounded-md bg-[#1a5f5f] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#154d4d]"
+            >
+              Guardar preferencias
+            </button>
+            {prefsSaved && (
+              <p className="flex items-center gap-2 text-sm font-semibold text-[oklch(0.55_0.16_150)]">
+                <CheckCircle2 className="h-5 w-5" />
+                ¡Listo! Te avisaremos cuando haya empleos que coincidan con tu perfil.
+              </p>
+            )}
           </div>
         </div>
       </section>

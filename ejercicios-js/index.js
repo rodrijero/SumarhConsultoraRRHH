@@ -1,1 +1,0 @@
-console.log("¡Logrado! El entorno de Node está funcionando.");
