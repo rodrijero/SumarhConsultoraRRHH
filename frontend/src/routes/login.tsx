@@ -6,9 +6,10 @@ import { loginUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Iniciar sesión — Sumarh" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    registered: search.registered === "true" || search.registered === true,
-  }),
+  validateSearch: (search: Record<string, unknown>): { registered?: boolean } => {
+    const registered = search.registered === "true" || search.registered === true;
+    return registered ? { registered: true } : {};
+  },
   component: LoginPage,
 });
 
